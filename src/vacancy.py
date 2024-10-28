@@ -1,68 +1,62 @@
+from typing import List
+
 
 class Vacancy:
-    """Класс для работы с вакансиями"""
-    __slots__ = ('name', 'city', 'salary', 'result')
+    """ Класс для работы с вакансиями """
 
-    def __init__(self, name, city, salary):
-        """Инициализатор для класса"""
+    def __init__(self, name, salary_from, salary_to, currency, url, responsibility):
         self.name = name
-        self.city = city
-        self.salary = salary
-        self.result = []
+        self.salary_from = salary_from
+        self.salary_to = salary_to
+        self.currency = currency
+        self.url = url
+        self.responsibility = responsibility
 
-    def reform_file(self, data_hh):
-        """Метод для обработки JSON-ответа от сайта HH.ru"""
-        for i in data_hh:
-            if i["salary"] is None:
-                self.result.append({
-                    "name": i["name"],
-                    "city": i["area"]["name"],
-                    "salary": {"from": 0,
-                               "to": 0},
-                    "url": i["alternate_url"],
-                    "description": i["snippet"]["requirement"]
-                })
-            elif i["salary"]["from"] is None and i["salary"]["currency"] == 'RUR':
-                self.result.append({
-                    "name": i["name"],
-                    "city": i["area"]["name"],
-                    "salary": {"from": 0,
-                               "to": i["salary"]["to"]},
-                    "url": i["alternate_url"],
-                    "description": i["snippet"]["requirement"]
-                })
-            elif i["salary"]["to"] is None and i["salary"]["currency"] == 'RUR':
-                self.result.append({
-                    "name": i["name"],
-                    "city": i["area"]["name"],
-                    "salary": {"from": i["salary"]["from"],
-                               "to": 0},
-                    "url": i["alternate_url"],
-                    "description": i["snippet"]["requirement"]
-                })
+    def __lt__(self, other):
+        """Метод сравнения вакансий между собой по зарплате по зарплате"""
 
-            elif i["salary"]["currency"] == 'RUR':
-                self.result.append({
-                    "name": i["name"],
-                    "city": i["area"]["name"],
-                    "salary": {"from": i["salary"]["from"],
-                               "to": i["salary"]["to"]},
-                    "url": i["alternate_url"],
-                    "description": i["snippet"]["requirement"]
-                })
+        if self.salary_from != 0:
+            return self.salary_from <= other.salary_from
+        elif self.salary_from == 0:
+            return self.salary_to <= other.salary_from
 
-    def filter_city(self):
-        """Метод фильтрации списка вакансий городу"""
-        result_city = []
-        for i in self.result:
-            if self.city == i["city"]:
-                result_city.append(i)
-        return result_city
+    def __str__(self):
+        """Метод для представляния вакансий при печати"""
+        a = (f'Название вакансии: {self.name}\n'
+             f'Ссылка на вакансию: {self.url}\n'
+             f'Описание вакансии: {self.responsibility}\n')
+        if self.salary_from == 0 and self.salary_to == 0:
+            return (f'{a}'
+                    f'ЗП не указана\n')
+        elif self.salary_from == 0:
+            return (f'{a}'
+                    f'ЗП до {self.salary_to} {self.currency}\n')
+        elif self.salary_to == 0:
+            return (f'{a}'
+                    f'ЗП от {self.salary_from} {self.currency}\n')
+        else:
+            return (f'{a}'
+                    f'ЗП от {self.salary_from} до {self.salary_to} {self.currency}\n')
 
-    def __le__(self, other, my_list):
-        """ метод фильтрации списка зп"""
-        res_salary = []
-        for i in my_list:
-            if other <= i["salary"]["from"]:
-                res_salary.append(i)
-        return res_salary
+    @classmethod
+    def cast_to_object_list(cls, data: List[dict]) -> List['Vacancy']:
+        """Преобразует список словарей, содержащих данные о вакансиях, в список объектов класса Vacancy"""
+
+        vacancies = []
+        for item in data:
+            name = item['name']
+            url = item['alternate_url']
+            salary_from = item['salary']['from']
+            salary_to = item['salary']['to']
+            currency = item['salary']['currency']
+            responsibility = item['snippet']['responsibility']
+            vacancy = cls(
+                name=name,
+                url=url,
+                salary_from=salary_from,
+                salary_to=salary_to,
+                currency=currency,
+                responsibility=responsibility
+            )
+            vacancies.append(vacancy)
+        return vacancies

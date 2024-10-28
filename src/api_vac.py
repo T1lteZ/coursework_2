@@ -1,31 +1,57 @@
-from abc import ABC, abstractmethod
 import requests
+from abc import ABC, abstractmethod
 
 
-class Parser(ABC):
-    """Родительский класс get-запросов"""
+class APIVacancies(ABC):
+    """
+    Абстрактный класс для работы по API с сервисами вакансий.
+    """
 
     @abstractmethod
-    def load_vacancies(self, keyword):
-        """Метод отправки get-запроса на сайт Head Hunter"""
+    def getting_vacancies(self, keyword):
         pass
 
 
-class HH(Parser):
-    """Класс для работы с API HeadHunter"""
+class HeadHunterRuAPI(APIVacancies):
+    """
+    Подключается к API и получает вакансии по ключевому слову
+    """
 
-    def __init__(self):
-        """Магический метод инициализаций объектов для отправки get-запроса"""
-        self._url = 'https://api.hh.ru/vacancies'
-        self._headers = {'User-Agent': 'HH-User-Agent'}
-        self.params = {'text': '', 'page': 0, 'per_page': 100}
-        self.vacancies = []
+    def getting_vacancies(self, keyword):
+        """
+        Получает вакансии по ключевому слову из API сервиса HH.ru поиска вакансий
+        param keyword: Ключевое слово для поиска вакансий
+        area: 3 - Город поиска "Екатеринбург"
+        per_page: 100 - Выводить 100 вакансий
+        :return: JSON-данные с информацией о вакансиях
+        """
 
-    def load_vacancies(self, keyword):
-        """Метод отправки get-запроса на сайт Head Hunter"""
-        self.params['text'] = keyword
-        while self.params.get('page') != 20:
-            response = requests.get(self._url, headers=self._headers, params=self.params)
-            vacancies = response.json()['items']
-            self.vacancies.extend(vacancies)
-            self.params['page'] += 1
+        url = 'https://api.hh.ru/vacancies'
+        params = {
+            "text": keyword,
+            "area": 3,
+            "per_page": 100,
+        }
+        response = requests.get(url, params=params)
+        return response.json()['items']
+
+    def validate_data(self, vacancy_data: list) -> list:
+        """ Метод возвращает экземпляр класса в виде скорректированного списка """
+
+        vacancies = []
+
+        for vac in vacancy_data:
+            if not vac["salary"]:
+                vac["salary"] = {'from': 0, 'to': 0, 'currency': 'RUR'}
+            else:
+                if not vac["salary"]["from"]:
+                    vac["salary"]["from"] = 0
+                else:
+                    if not vac["salary"]["to"]:
+                        vac["salary"]["to"] = 0
+            if vac["snippet"]["requirement"]:
+                vac["snippet"]["requirement"] = vac["snippet"]["requirement"]
+            else:
+                vac["snippet"]["requirement"] = "Информация отсутствует"
+            vacancies.append(vac)
+        return vacancies
