@@ -22,7 +22,7 @@ class Saver(ABC):
 class JSONSaver(Saver):
     """ Класс для записи в json-файл по пути data/vacancies.json (файл config)"""
 
-    def __init__(self, filepath: str = "data/vacancies.json", mode='w', encoding='utf-8'):
+    def __init__(self, filepath: str = os.path.abspath("data/vacancies.json"), mode='w', encoding='utf-8'):
         self.__filepath = filepath
         self._mode = mode
         self._encoding = encoding
