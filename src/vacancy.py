@@ -38,6 +38,16 @@ class Vacancy:
             return (f'{a}'
                     f'ЗП от {self.salary_from} до {self.salary_to} {self.currency}\n')
 
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "salary_from": self.salary_from,
+            "salary_to": self.salary_to,
+            "currency": self.currency,
+            "url": self.url,
+            "responsibility": self.responsibility
+        }
+
     @classmethod
     def cast_to_object_list(cls, data: List[dict]) -> List['Vacancy']:
         """Преобразует список словарей, содержащих данные о вакансиях, в список объектов класса Vacancy"""

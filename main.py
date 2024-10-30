@@ -8,18 +8,17 @@ def main():
 
     a = HeadHunterRuAPI()
     user_text = input("Введите ключевые слова для поиска вакансии (может быть несколько слов):\n")
-    vacancies = a.getting_vacancies(user_text)
-    valid_vacancies = a.validate_data(vacancies)
+    vacancies_info = a.getting_vacancies(user_text)
+    valid_vacancies_info = a.validate_data(vacancies_info)
+
+    vacancies_instances = Vacancy.cast_to_object_list(valid_vacancies_info)
 
     vacancies_json = JSONSaver()
-    vacancies_json.add_data(valid_vacancies)
-
-    user_vacancies = JSONSaver()
-    vac_data = Vacancy.cast_to_object_list(user_vacancies.get_data())
+    vacancies_json.add_data(vacancies_instances)
 
     try:
         user_top_vac = int(input("Я покажу топ N вакансий по заплате. Сколько вакансий вывести? (число) \n\n"))
-        top_n_vac = top_sort_vac(vac_data, user_top_vac)
+        top_n_vac = top_sort_vac(vacancies_instances, user_top_vac)
         for w in top_n_vac:
             print(w)
     except ValueError:
