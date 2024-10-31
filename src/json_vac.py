@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import os
 import json
+import requests
 
 
 class Saver(ABC):
@@ -29,43 +30,17 @@ class JSONSaver(Saver):
 
     def add_data(self, vacancies):
         if os.stat(self.__filepath).st_size == 0:
-            all_vacancies = []
-
-            for job in vacancies:
-                job_data = {
-                    'name': job.name,
-                    'salary_from': job.salary_from,
-                    'salary_to': job.salary_to,
-                    'currency': job.currency,
-                    "url": job.url,
-                    "responsibility": job.responsibility
-                }
-                all_vacancies.append(job_data)
-
-            with open(self.__filepath, self._mode, encoding=self._encoding) as file:
-                json.dump(all_vacancies, file, ensure_ascii=False, indent=4)
-
-            print(f'\nЯ нашел {len(vacancies)} подходящих вакансий и сохранил в файл {self.__filepath}\n\n')
-
+            all_vacancies = [vac.to_dict() for vac in vacancies]
         else:
             existing_vacancies = self.get_data()
+            new_vacancies = [vac.to_dict() for vac in vacancies]
+            all_vacancies = existing_vacancies + new_vacancies
 
-            for job in vacancies:
-                job_data = {
-                    'name': job.name,
-                    'salary_from': job.salary_from,
-                    'salary_to': job.salary_to,
-                    'currency': job.currency,
-                    "url": job.url,
-                    "responsibility": job.responsibility
-                }
-                existing_vacancies.get(job_data)
+        with open(self.__filepath, self._mode, encoding=self._encoding) as file:
+            json.dump(all_vacancies, file, ensure_ascii=False, indent=4)
 
-            with open(self.__filepath, self._mode, encoding=self._encoding) as file:
-                json.dump(existing_vacancies, file, ensure_ascii=False, indent=4)
-
-            print(f'\nЯ нашел {len(vacancies)} подходящих вакансий и сохранил в файл {self.__filepath}\n\n'
-                  f'В файле записано {len(existing_vacancies)} вакансий\n\n')
+        print(f'\nЯ нашел {len(vacancies)} подходящих вакансий и сохранил в файл {self.__filepath}\n'
+              f'В файле записано {len(all_vacancies)} вакансий\n\n')
 
     def get_data(self):
         """ Получение данных json из файла"""
@@ -73,5 +48,10 @@ class JSONSaver(Saver):
         with open(self.__filepath, 'r', encoding=self._encoding) as file:
             return json.load(file)
 
-    def del_data(self):
-        pass
+    def del_data(self, url: str):
+        vacancies = self.get_data()
+
+        updated_vacancies = [vac for vac in vacancies if vac['url'] != url]
+
+        with open(self.__filepath, 'w', encoding=self._encoding) as file:
+            json.dump(updated_vacancies, file, ensure_ascii=False, indent=4)
